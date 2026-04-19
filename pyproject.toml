@@ -11,6 +11,10 @@ dependencies = [
   "scrapling[fetchers]>=0.4.7,<0.5",
   "pydantic>=2.6,<3",
   "pyyaml>=6.0,<7",
+  "filelock>=3.13",
+  "typer[all]>=0.12",
+  "questionary>=2.0",
+  "rich>=13.7",
 ]
 
 [project.optional-dependencies]
@@ -19,8 +23,14 @@ dev = [
   "ruff>=0.5",
 ]
 
+[project.scripts]
+linkedin-autoreply = "bot.cli:app"
+
 [tool.setuptools]
 include-package-data = true
 
 [tool.setuptools.packages.find]
 include = ["bot*"]
+
+[tool.setuptools.package-data]
+"bot.scheduler" = ["templates/*.tmpl"]

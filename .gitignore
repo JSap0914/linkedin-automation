@@ -12,3 +12,4 @@ dist/
 .playwright-mcp/
 .ruff_cache/
 docs/
+replies.yaml

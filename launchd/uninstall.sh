@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PLIST_DEST="${HOME}/Library/LaunchAgents/com.user.linkedin-autoreply.plist"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-if [ -f "${PLIST_DEST}" ]; then
-    launchctl unload "${PLIST_DEST}" 2>/dev/null || true
-    rm "${PLIST_DEST}"
-    echo "✅ LaunchAgent unloaded and removed."
-else
-    echo "ℹ️  LaunchAgent not installed (plist not found)."
+CLI="${PROJECT_ROOT}/.venv/bin/linkedin-autoreply"
+if [ ! -x "${CLI}" ]; then
+  echo "linkedin-autoreply CLI not found at ${CLI}" >&2
+  exit 1
 fi
+
+exec "${CLI}" uninstall
