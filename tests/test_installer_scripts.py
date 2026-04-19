@@ -42,7 +42,28 @@ def test_install_ps1_accepts_any_python_3_11_plus():
 def test_install_ps1_has_resolve_python_helper():
     text = (ROOT / "install.ps1").read_text()
     assert "function Resolve-Python" in text
-    assert "throw 'Python 3.11+ is required.'" in text
+    assert "function Test-PythonBinary" in text
+    assert "function Is-StoreStub" in text
+
+
+def test_install_ps1_skips_microsoft_store_python_stub():
+    text = (ROOT / "install.ps1").read_text()
+    assert "WindowsApps" in text
+    assert "Is-StoreStub" in text
+
+
+def test_install_ps1_tries_python_before_py_launcher():
+    text = (ROOT / "install.ps1").read_text()
+    body = text[text.index("function Resolve-Python"):]
+    python_idx = body.index("'python',")
+    py_idx = body.index("'py'")
+    assert python_idx < py_idx, "python should be attempted before py launcher"
+
+
+def test_install_ps1_error_mentions_python_org_and_launcher():
+    text = (ROOT / "install.ps1").read_text()
+    assert "python.org" in text
+    assert "py launcher" in text.lower() or "py launcher" in text
 
 
 def test_readme_warns_about_powershell_activate_pitfall():

@@ -17,20 +17,62 @@ function Require-Command([string]$Name) {
 
 Require-Command git
 
+function Test-PythonBinary {
+  param([string[]]$Command)
+
+  try {
+    $output = & $Command[0] $Command[1..($Command.Length - 1)] `
+      -c "import sys; sys.stdout.write(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>$null
+  } catch {
+    return $null
+  }
+
+  if ($LASTEXITCODE -ne 0) { return $null }
+  if (-not $output) { return $null }
+
+  try {
+    if ([version]$output -ge [version]'3.11') { return $Command }
+  } catch {
+    return $null
+  }
+  return $null
+}
+
+function Is-StoreStub {
+  param([string]$CommandName)
+
+  $info = Get-Command $CommandName -ErrorAction SilentlyContinue
+  if (-not $info) { return $false }
+  return ($info.Source -and $info.Source -like '*\WindowsApps\*')
+}
+
 function Resolve-Python {
+  foreach ($cmd in @('python', 'python3', 'python3.14', 'python3.13', 'python3.12', 'python3.11')) {
+    if (Is-StoreStub $cmd) { continue }
+    if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) { continue }
+    $result = Test-PythonBinary @($cmd)
+    if ($result) { return $result }
+  }
+
   if (Get-Command py -ErrorAction SilentlyContinue) {
     foreach ($ver in @('3.14', '3.13', '3.12', '3.11')) {
-      & py "-$ver" -c "import sys" 2>$null
-      if ($LASTEXITCODE -eq 0) { return @('py', "-$ver") }
+      $result = Test-PythonBinary @('py', "-$ver")
+      if ($result) { return $result }
     }
+    $result = Test-PythonBinary @('py', '-3')
+    if ($result) { return $result }
   }
-  foreach ($cmd in @('python3.14', 'python3.13', 'python3.12', 'python3.11', 'python3', 'python')) {
-    if (Get-Command $cmd -ErrorAction SilentlyContinue) {
-      $v = & $cmd -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>$null
-      if ($v -and [version]$v -ge [version]'3.11') { return @($cmd) }
-    }
-  }
-  throw 'Python 3.11+ is required.'
+
+  throw @'
+Python 3.11+ is required but could not be resolved automatically.
+
+Tried: python, python3, python3.14, python3.13, python3.12, python3.11, py -3.14/-3.13/-3.12/-3.11/-3
+Microsoft Store "python" stubs (WindowsApps\*) are intentionally skipped.
+
+Fix: install Python 3.11+ from https://www.python.org/downloads/ with
+"Add python.exe to PATH" and "Install py launcher" both checked.
+Then re-run this installer.
+'@
 }
 
 $PythonCmd = Resolve-Python
