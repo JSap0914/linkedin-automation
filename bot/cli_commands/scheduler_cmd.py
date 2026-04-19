@@ -6,6 +6,7 @@ from pathlib import Path
 import typer
 from rich.console import Console
 
+from bot.project_paths import repo_root
 from bot.scheduler import UnsupportedPlatformError, get_scheduler
 
 console = Console()
@@ -13,7 +14,7 @@ err_console = Console(stderr=True)
 
 
 def _project_root() -> Path:
-    return Path.cwd()
+    return repo_root()
 
 
 def _python_path() -> Path:

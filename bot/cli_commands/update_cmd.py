@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import typer
 from rich.console import Console
 
+from bot.project_paths import repo_root
 from bot import updater
 from bot.config_io import DEFAULT_PATH, dump_raw, load_raw
 from bot.config_migrate import MigrationError, migrate
@@ -16,9 +18,10 @@ err_console = Console(stderr=True)
 
 def _reinstall_scheduler() -> bool:
     sched = get_scheduler()
+    root = repo_root()
     try:
         sched.uninstall()
-        sched.install(project_root=Path.cwd(), python_path=Path.cwd() / ".venv" / "bin" / "python")
+        sched.install(project_root=root, python_path=Path(sys.executable))
         return True
     except UnsupportedPlatformError:
         return False

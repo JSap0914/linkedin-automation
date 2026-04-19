@@ -33,7 +33,10 @@ class WindowsScheduler(Scheduler):
 
     def install(self, *, project_root: Path, python_path: Path) -> None:
         bot_py = project_root / "bot.py"
-        cmd = f'"{python_path}" "{bot_py}"'
+        cmd = (
+            f'cmd.exe /d /c "cd /d \"{project_root}\" && '
+            f'\"{python_path}\" \"{bot_py}\""'
+        )
         (project_root / "logs").mkdir(parents=True, exist_ok=True)
         _run(
             [
@@ -96,5 +99,5 @@ class WindowsScheduler(Scheduler):
         return None
 
     def template_hash(self) -> str:
-        key = f"{Scheduler.LABEL}|{Scheduler.INTERVAL_SECONDS}|schtasks|MINUTE|1|LIMITED"
+        key = f"{Scheduler.LABEL}|{Scheduler.INTERVAL_SECONDS}|schtasks|MINUTE|1|LIMITED|cmd.exe|cd /d"
         return hashlib.sha256(key.encode()).hexdigest()

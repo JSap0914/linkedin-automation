@@ -74,6 +74,8 @@ def test_install_embeds_python_and_bot_py_in_action(fake_run, tmp_path):
     action = create[tr_idx + 1]
     assert str(python_path) in action
     assert "bot.py" in action
+    assert "cmd.exe /d /c" in action
+    assert "cd /d" in action
 
 
 def test_install_forces_overwrite(fake_run, tmp_path):
