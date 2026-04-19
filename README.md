@@ -58,15 +58,17 @@ If the install directory already exists as a clean git checkout, the installer f
 
 ## Manual Install
 
+Any Python **3.11+** works. You do **not** need to "activate" the venv — just call its binaries directly. This matches what `install.sh` / `install.ps1` do internally and sidesteps PowerShell's `Activate.ps1` pitfalls entirely.
+
 ### macOS / Linux
 
 ```bash
 git clone https://github.com/JSap0914/linkedin-automation.git
 cd linkedin-automation
-python3.11 -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
-scrapling install
-linkedin-autoreply init
+python3 -m venv .venv
+.venv/bin/python -m pip install -e ".[dev]"
+.venv/bin/scrapling install
+.venv/bin/linkedin-autoreply init
 ```
 
 ### Windows (PowerShell)
@@ -74,12 +76,20 @@ linkedin-autoreply init
 ```powershell
 git clone https://github.com/JSap0914/linkedin-automation.git
 cd linkedin-automation
-py -3.11 -m venv .venv
-.venv\Scripts\Activate.ps1
-pip install -e ".[dev]"
-scrapling install
-linkedin-autoreply init
+py -3 -m venv .venv
+.venv\Scripts\python.exe -m pip install -e ".[dev]"
+.venv\Scripts\scrapling.exe install
+.venv\Scripts\linkedin-autoreply.exe init
 ```
+
+> If you *really* want to activate the venv in PowerShell, you must prefix the path with `.\` and allow local scripts:
+>
+> ```powershell
+> Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
+> .\.venv\Scripts\Activate.ps1
+> ```
+>
+> Without `.\`, PowerShell treats `.venv` as a module name and fails with `CouldNotAutoLoadModule`.
 
 ---
 
@@ -294,12 +304,71 @@ linkedin-autoreply run --bootstrap
 This marks every current comment as "seen" without replying.
 
 ### `linkedin-autoreply: command not found`
-Your virtualenv isn't activated, or `pip install -e .` failed:
+
+Call the binary inside the venv directly — **no activation needed**.
+
+macOS / Linux:
 ```bash
-source .venv/bin/activate   # macOS/Linux
-.venv\Scripts\Activate.ps1  # Windows
-pip install -e ".[dev]"
+.venv/bin/linkedin-autoreply --help
+.venv/bin/python -m pip install -e ".[dev]"   # if deps missing
 ```
+
+Windows (PowerShell or cmd):
+```powershell
+.venv\Scripts\linkedin-autoreply.exe --help
+.venv\Scripts\python.exe -m pip install -e ".[dev]"
+```
+
+### PowerShell: `'.venv' 모듈을 로드할 수 없습니다` / `CouldNotAutoLoadModule`
+
+You ran `.venv\Scripts\Activate.ps1` without the leading `.\`. PowerShell treats `.venv` as a module name instead of a relative path. Two fixes:
+
+**Easiest — skip activation entirely** (recommended; matches what our installer does):
+
+```powershell
+.venv\Scripts\python.exe -m pip install -e ".[dev]"
+.venv\Scripts\scrapling.exe install
+.venv\Scripts\linkedin-autoreply.exe init
+```
+
+**If you insist on activating**, prefix with `.\` and allow local scripts:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
+.\.venv\Scripts\Activate.ps1
+```
+
+`-Scope Process` only lasts for the current terminal session.
+
+### PowerShell: `cannot be loaded because running scripts is disabled on this system`
+
+Your execution policy is `Restricted` (Windows default). Either:
+
+```powershell
+# Temporary — only this terminal session
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
+
+# Permanent for your user — no admin needed
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+
+Or just use the venv binaries directly (no activation, no policy change needed).
+
+### `Python 3.11+ is required` from the installer
+
+The installer prefers the newest `python3.14` → `python3.13` → `python3.12` → `python3.11` available. On Windows it also tries `py -3.14`, `py -3.13`, etc.
+
+If you have Python installed but the installer doesn't find it:
+
+```bash
+# Check what you have (macOS/Linux)
+command -v python3.11 python3.12 python3.13 python3
+
+# PowerShell
+py --list
+```
+
+Install a recent CPython from [python.org](https://www.python.org/downloads/) if none show up.
 
 ### Tests fail with `ModuleNotFoundError: filelock`
 ```bash
