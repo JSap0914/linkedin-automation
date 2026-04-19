@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import subprocess
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -136,3 +137,32 @@ def test_detect_drift_scheduler_templates():
 def test_detect_drift_irrelevant_files():
     drift = updater.detect_drift(["README.md", "docs/foo.md"])
     assert all(v is False for v in drift.values())
+
+
+def test_updater_uses_repo_root_when_cwd_not_passed(monkeypatch):
+    seen: dict[str, object] = {}
+
+    def _subprocess_run(args, *, check=True, capture_output=True, text=True, cwd=None):
+        seen["cwd"] = cwd
+        return subprocess.CompletedProcess(args=args, returncode=0, stdout="", stderr="")
+
+    fake_root = Path("/tmp/fake-repo")
+
+    monkeypatch.setattr(updater, "repo_root", lambda: fake_root)
+    monkeypatch.setattr(subprocess, "run", _subprocess_run)
+    updater.is_dirty()
+    assert seen["cwd"] == str(fake_root)
+
+
+def test_updater_respects_explicit_cwd(monkeypatch):
+    seen: dict[str, object] = {}
+
+    def _run(args, *, check=True, cwd=None):
+        seen["cwd"] = cwd
+        return subprocess.CompletedProcess(args=args, returncode=0, stdout="abc\n", stderr="")
+
+    explicit = Path("/tmp/explicit")
+
+    monkeypatch.setattr(updater, "_run", _run)
+    assert updater.current_sha(cwd=explicit) == "abc"
+    assert seen["cwd"] == explicit

@@ -6,6 +6,8 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from bot.project_paths import repo_root
+
 
 @dataclass
 class UpdateResult:
@@ -26,8 +28,9 @@ class UpdateError(RuntimeError):
 
 
 def _run(args: list[str], *, check: bool = True, cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
+    workdir = cwd or repo_root()
     return subprocess.run(
-        args, check=check, capture_output=True, text=True, cwd=str(cwd) if cwd else None
+        args, check=check, capture_output=True, text=True, cwd=str(workdir)
     )
 
 
