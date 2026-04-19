@@ -11,3 +11,4 @@ dist/
 .sisyphus/
 .playwright-mcp/
 .ruff_cache/
+docs/
