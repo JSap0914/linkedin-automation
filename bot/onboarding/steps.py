@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import abc
+import shutil
+import subprocess
 import sys
+import webbrowser
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +16,8 @@ from bot.config_io import DEFAULT_PATH, dump_raw
 from bot.scheduler import UnsupportedPlatformError, get_scheduler
 
 console = Console()
+
+GITHUB_REPO = "JSap0914/linkedin-automation"
 
 
 class BaseStep(abc.ABC):
@@ -260,6 +265,77 @@ class SchedulerInstallStep(BaseStep):
             console.print(f"[yellow]Scheduler install failed: {exc}[/yellow]")
             return True
         console.print("[green]OK[/green] Scheduler installed and enabled.")
+        return True
+
+
+class GitHubStarStep(BaseStep):
+    name = "Star on GitHub"
+    REPO = GITHUB_REPO
+
+    def _is_interactive(self) -> bool:
+        import os
+        return sys.stdin.isatty() and not os.environ.get("CI")
+
+    def _gh_available(self) -> bool:
+        return shutil.which("gh") is not None
+
+    def _already_starred(self) -> bool:
+        result = subprocess.run(
+            ["gh", "api", f"/user/starred/{self.REPO}"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=5,
+        )
+        return result.returncode == 0
+
+    def _star_via_gh(self) -> bool:
+        result = subprocess.run(
+            ["gh", "api", "--silent", "--method", "PUT", f"/user/starred/{self.REPO}"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=10,
+        )
+        return result.returncode == 0
+
+    def run(self, state: dict) -> bool:
+        if not self._is_interactive():
+            return True
+
+        if self._gh_available():
+            try:
+                if self._already_starred():
+                    console.print("[green]⭐ Already starred — thanks![/green]")
+                    return True
+            except subprocess.TimeoutExpired:
+                pass
+
+            if not _confirm(
+                "Star linkedin-automation on GitHub? (takes 1 second, helps a ton 🙏)",
+                default=True,
+            ):
+                console.print("No worries — skipping star.")
+                return True
+
+            try:
+                if self._star_via_gh():
+                    console.print("[green]⭐ Starred! Thanks for the support.[/green]")
+                    return True
+            except subprocess.TimeoutExpired:
+                pass
+
+        if not _confirm(
+            "Star linkedin-automation on GitHub? (opens in your browser)",
+            default=True,
+        ):
+            return True
+        url = f"https://github.com/{self.REPO}"
+        try:
+            webbrowser.open(url)
+        except Exception:
+            pass
+        console.print(f"[green]Opened[/green] {url} — thanks for starring!")
         return True
 
 

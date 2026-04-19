@@ -79,7 +79,8 @@ Each step is skippable (answer "no") except ToS + login. Defaults in brackets.
 6. **Write config** → `replies.yaml` (validated against pydantic schema before write)
 7. **Bootstrap existing comments?** `[Y/n]` — marks all current comments on your posts as "seen" so the bot won't reply to old ones
 8. **Install scheduler?** `[Y/n]` — registers a launchd agent (macOS) or Task Scheduler task (Windows) that runs the bot every 60 seconds
-9. **Done** — prints next-step commands
+9. **Star on GitHub?** `[Y/n]` — if `gh` CLI is installed and authenticated, stars the repo in-place via `gh api --silent --method PUT /user/starred/<repo>`. Otherwise opens the repo in your browser so you can star manually. Skipped automatically in non-TTY/CI. Pattern inspired by [oh-my-openagent](https://github.com/code-yeongyu/oh-my-openagent).
+10. **Done** — prints next-step commands
 
 ### What gets created on disk
 

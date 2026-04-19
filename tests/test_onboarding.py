@@ -12,6 +12,7 @@ from bot.onboarding.steps import (
     BootstrapStep,
     DmConfigStep,
     FinalStep,
+    GitHubStarStep,
     ReplyConfigStep,
     SchedulerInstallStep,
     TosStep,
@@ -160,3 +161,113 @@ def test_scheduler_install_step_skipped_if_declined():
         with patch("bot.onboarding.steps.get_scheduler") as mock_get:
             assert step.run({}) is True
             mock_get.assert_not_called()
+
+
+def test_github_star_step_is_in_full_steps():
+    assert GitHubStarStep in OnboardingWizard.FULL_STEPS
+    full = OnboardingWizard.FULL_STEPS
+    assert full.index(GitHubStarStep) > full.index(SchedulerInstallStep)
+    assert full.index(GitHubStarStep) < full.index(FinalStep)
+
+
+def test_github_star_step_skips_in_non_tty():
+    step = GitHubStarStep()
+    with (
+        patch.object(step, "_is_interactive", return_value=False),
+        patch.object(step, "_gh_available") as mock_gh,
+        patch("bot.onboarding.steps._confirm") as mock_confirm,
+    ):
+        assert step.run({}) is True
+        mock_gh.assert_not_called()
+        mock_confirm.assert_not_called()
+
+
+def test_github_star_step_already_starred_skips_prompt():
+    step = GitHubStarStep()
+    with (
+        patch.object(step, "_is_interactive", return_value=True),
+        patch.object(step, "_gh_available", return_value=True),
+        patch.object(step, "_already_starred", return_value=True),
+        patch.object(step, "_star_via_gh") as mock_star,
+        patch("bot.onboarding.steps._confirm") as mock_confirm,
+    ):
+        assert step.run({}) is True
+        mock_star.assert_not_called()
+        mock_confirm.assert_not_called()
+
+
+def test_github_star_step_stars_when_user_accepts():
+    step = GitHubStarStep()
+    with (
+        patch.object(step, "_is_interactive", return_value=True),
+        patch.object(step, "_gh_available", return_value=True),
+        patch.object(step, "_already_starred", return_value=False),
+        patch.object(step, "_star_via_gh", return_value=True) as mock_star,
+        patch("bot.onboarding.steps._confirm", return_value=True),
+    ):
+        assert step.run({}) is True
+        mock_star.assert_called_once()
+
+
+def test_github_star_step_respects_user_decline():
+    step = GitHubStarStep()
+    with (
+        patch.object(step, "_is_interactive", return_value=True),
+        patch.object(step, "_gh_available", return_value=True),
+        patch.object(step, "_already_starred", return_value=False),
+        patch.object(step, "_star_via_gh") as mock_star,
+        patch("bot.onboarding.steps._confirm", return_value=False),
+    ):
+        assert step.run({}) is True
+        mock_star.assert_not_called()
+
+
+def test_github_star_step_no_gh_falls_back_to_webbrowser():
+    step = GitHubStarStep()
+    with (
+        patch.object(step, "_is_interactive", return_value=True),
+        patch.object(step, "_gh_available", return_value=False),
+        patch("bot.onboarding.steps._confirm", return_value=True),
+        patch("bot.onboarding.steps.webbrowser.open") as mock_open,
+    ):
+        assert step.run({}) is True
+        mock_open.assert_called_once()
+        assert "github.com" in mock_open.call_args[0][0]
+
+
+def test_github_star_step_no_gh_declines_opens_nothing():
+    step = GitHubStarStep()
+    with (
+        patch.object(step, "_is_interactive", return_value=True),
+        patch.object(step, "_gh_available", return_value=False),
+        patch("bot.onboarding.steps._confirm", return_value=False),
+        patch("bot.onboarding.steps.webbrowser.open") as mock_open,
+    ):
+        assert step.run({}) is True
+        mock_open.assert_not_called()
+
+
+def test_github_star_step_gh_put_fails_falls_back_to_browser():
+    step = GitHubStarStep()
+    with (
+        patch.object(step, "_is_interactive", return_value=True),
+        patch.object(step, "_gh_available", return_value=True),
+        patch.object(step, "_already_starred", return_value=False),
+        patch.object(step, "_star_via_gh", return_value=False),
+        patch("bot.onboarding.steps._confirm", return_value=True),
+        patch("bot.onboarding.steps.webbrowser.open") as mock_open,
+    ):
+        assert step.run({}) is True
+        mock_open.assert_called_once()
+
+
+def test_github_star_step_uses_omo_exact_command():
+    step = GitHubStarStep()
+    with patch("bot.onboarding.steps.subprocess.run") as mock_run:
+        mock_run.return_value.returncode = 0
+        step._star_via_gh()
+        args = mock_run.call_args[0][0]
+        assert args == [
+            "gh", "api", "--silent", "--method", "PUT",
+            f"/user/starred/{GitHubStarStep.REPO}",
+        ]

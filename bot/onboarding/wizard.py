@@ -9,6 +9,7 @@ from bot.onboarding.steps import (
     BootstrapStep,
     DmConfigStep,
     FinalStep,
+    GitHubStarStep,
     LoginStep,
     PrereqStep,
     ReplyConfigStep,
@@ -30,6 +31,7 @@ class OnboardingWizard:
         WriteConfigStep,
         BootstrapStep,
         SchedulerInstallStep,
+        GitHubStarStep,
         FinalStep,
     ]
 
