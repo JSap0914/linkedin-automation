@@ -16,18 +16,24 @@ function Require-Command([string]$Name) {
 }
 
 Require-Command git
-$PythonCmd = $null
-if (Get-Command py -ErrorAction SilentlyContinue) {
-  $PythonCmd = @('py', '-3.11')
-} elseif (Get-Command python -ErrorAction SilentlyContinue) {
-  $Version = & python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"
-  if ([version]$Version -lt [version]'3.11') {
-    throw 'Python 3.11+ is required.'
+
+function Resolve-Python {
+  if (Get-Command py -ErrorAction SilentlyContinue) {
+    foreach ($ver in @('3.14', '3.13', '3.12', '3.11')) {
+      & py "-$ver" -c "import sys" 2>$null
+      if ($LASTEXITCODE -eq 0) { return @('py', "-$ver") }
+    }
   }
-  $PythonCmd = @('python')
-} else {
+  foreach ($cmd in @('python3.14', 'python3.13', 'python3.12', 'python3.11', 'python3', 'python')) {
+    if (Get-Command $cmd -ErrorAction SilentlyContinue) {
+      $v = & $cmd -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>$null
+      if ($v -and [version]$v -ge [version]'3.11') { return @($cmd) }
+    }
+  }
   throw 'Python 3.11+ is required.'
 }
+
+$PythonCmd = Resolve-Python
 
 if (Test-Path (Join-Path $InstallDir '.git')) {
   $Dirty = (& git -C $InstallDir status --porcelain)

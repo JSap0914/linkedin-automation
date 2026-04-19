@@ -14,26 +14,19 @@ for arg in "$@"; do
 done
 
 pick_python() {
-  if command -v python3.11 >/dev/null 2>&1; then
-    echo "python3.11"
-    return
-  fi
-  if command -v python3 >/dev/null 2>&1; then
-    python3 - <<'PY' >/dev/null 2>&1
+  # Accept any Python >=3.11, prefer newer explicit versions first.
+  for bin in python3.14 python3.13 python3.12 python3.11 python3 python; do
+    if command -v "$bin" >/dev/null 2>&1; then
+      if "$bin" - <<'PY' >/dev/null 2>&1
 import sys
 raise SystemExit(0 if sys.version_info >= (3, 11) else 1)
 PY
-    echo "python3"
-    return
-  fi
-  if command -v python >/dev/null 2>&1; then
-    python - <<'PY' >/dev/null 2>&1
-import sys
-raise SystemExit(0 if sys.version_info >= (3, 11) else 1)
-PY
-    echo "python"
-    return
-  fi
+      then
+        echo "$bin"
+        return 0
+      fi
+    fi
+  done
   return 1
 }
 
