@@ -30,7 +30,33 @@ LinkedIn's User Agreement prohibits automated access and interactions with the p
 
 ---
 
-## Quick Start
+## One-Line Install
+
+### macOS / Linux
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/JSap0914/linkedin-automation/main/install.sh | bash
+```
+
+### Windows (PowerShell)
+
+```powershell
+iex (iwr -useb https://raw.githubusercontent.com/JSap0914/linkedin-automation/main/install.ps1).Content
+```
+
+What the installer does:
+- clones to `~/.linkedin-automation`
+- creates `.venv`
+- runs `pip install -e ".[dev]"`
+- runs `scrapling install`
+- creates a global wrapper command (`linkedin-autoreply`) that always runs from the install root
+- immediately launches `linkedin-autoreply init`
+
+If the install directory already exists as a clean git checkout, the installer fast-forwards it. If it has uncommitted changes, it aborts rather than overwriting them.
+
+---
+
+## Manual Install
 
 ### macOS / Linux
 
@@ -39,8 +65,8 @@ git clone https://github.com/JSap0914/linkedin-automation.git
 cd linkedin-automation
 python3.11 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-scrapling install        # downloads Chromium (~300 MB, one-time)
-linkedin-autoreply init  # interactive wizard
+scrapling install
+linkedin-autoreply init
 ```
 
 ### Windows (PowerShell)
@@ -166,6 +192,8 @@ schtasks /Query /TN LinkedInAutoReply
 linkedin-autoreply update
 ```
 
+If you installed via `install.sh` / `install.ps1`, this works from **any current working directory** because the global wrapper command always `cd`s into the install root before invoking the CLI.
+
 This:
 1. Aborts if your working tree is dirty (run `git status` to see)
 2. `git pull --ff-only origin main` (refuses non-fast-forward)
@@ -198,7 +226,24 @@ The next scheduled run exits cleanly with no LinkedIn API calls. Re-enable with 
 linkedin-autoreply uninstall   # removes scheduler entry
 deactivate                     # exit venv
 rm -rf .venv .profile .cache seen_comments.db logs replies.yaml
-# then just `rm -rf` the whole project directory
+cd ..
+rm -rf linkedin-automation     # manual-install path
+```
+
+If you used the one-line installer, remove the installer-managed directory instead:
+
+```bash
+linkedin-autoreply uninstall
+rm -rf ~/.linkedin-automation
+rm -f ~/.local/bin/linkedin-autoreply
+```
+
+Windows (PowerShell):
+
+```powershell
+linkedin-autoreply uninstall
+Remove-Item -Recurse -Force $HOME\.linkedin-automation
+Remove-Item -Force "$HOME\AppData\Local\Microsoft\WindowsApps\linkedin-autoreply.cmd" -ErrorAction SilentlyContinue
 ```
 
 ---
