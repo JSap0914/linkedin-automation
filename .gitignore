@@ -1,0 +1,13 @@
+.venv/
+.profile/
+.cache/
+seen_comments.db
+logs/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+dist/
+.sisyphus/
+.playwright-mcp/
+.ruff_cache/
