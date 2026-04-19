@@ -87,13 +87,25 @@ def test_reply_config_step_uses_defaults_on_happy_path():
     state: dict = {}
     with (
         patch("bot.onboarding.steps._confirm", return_value=True),
-        patch("bot.onboarding.steps._text", side_effect=["0", "60"]),
+        patch("bot.onboarding.steps._text", side_effect=["0", "60", "30"]),
     ):
         assert step.run(state) is True
     assert state["config"]["enabled"] is True
     assert len(state["config"]["sentences"]) == 3
     assert state["config"]["reply_delay_seconds_min"] == 0
     assert state["config"]["polling_min_interval_seconds"] == 60
+    assert state["config"]["post_lookback_days"] == 30
+
+
+def test_reply_config_step_can_override_post_lookback_days():
+    step = ReplyConfigStep()
+    state: dict = {}
+    with (
+        patch("bot.onboarding.steps._confirm", return_value=True),
+        patch("bot.onboarding.steps._text", side_effect=["0", "60", "7"]),
+    ):
+        assert step.run(state) is True
+    assert state["config"]["post_lookback_days"] == 7
 
 
 def test_dm_config_step_skips_detail_when_disabled():

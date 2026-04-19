@@ -95,6 +95,7 @@ Each step is skippable (answer "no") except ToS + login. Defaults in brackets.
    - Use the default 3 Korean thank-you templates? `[Y/n]` — answer `n` to enter your own 3
    - Reply delay seconds (0 = instant) `[0]`
    - Polling interval seconds (must be ≥ 60) `[60]`
+   - How many days of your recent posts should the bot scan? (1-3650) `[30]`
 5. **DM config** (optional — skip if you only want replies)
    - Enable auto-DM? `[y/N]`
    - Only DM 1st-degree connections? `[Y/n]` (recommended yes)

@@ -152,6 +152,15 @@ class ReplyConfigStep(BaseStep):
             return False
         defaults["polling_min_interval_seconds"] = int(raw)
 
+        raw = _text(
+            "How many days of your recent posts should the bot scan? (1-3650):",
+            default=str(defaults["post_lookback_days"]),
+            validate=lambda v: (v.isdigit() and 1 <= int(v) <= 3650) or "Must be between 1 and 3650",
+        )
+        if raw is None:
+            return False
+        defaults["post_lookback_days"] = int(raw)
+
         return True
 
 
