@@ -354,18 +354,39 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 
 Or just use the venv binaries directly (no activation, no policy change needed).
 
-### `Python 3.11+ is required` from the installer
+### `Python 3.11+ is required` / `No suitable Python runtime found` (Windows)
 
-The installer prefers the newest `python3.14` → `python3.13` → `python3.12` → `python3.11` available. On Windows it also tries `py -3.14`, `py -3.13`, etc.
+The installer prefers `python` (then `python3`, explicit versions, then `py -3.X`). Microsoft Store python stubs under `WindowsApps\` are deliberately skipped because they open the Store instead of running Python.
 
-If you have Python installed but the installer doesn't find it:
+`"No suitable Python runtime found"` is emitted by `py.exe` itself when its registry (`HKCU/HKLM\SOFTWARE\Python\PythonCore`) doesn't list the requested version — even if you actually have Python installed. Common causes:
+
+1. You installed via the Microsoft Store — `py.exe` doesn't see Store installs by default.
+2. You installed from python.org but unchecked "Install py launcher" or "Add Python to PATH".
+
+**Diagnose what `py` sees**:
+
+```powershell
+py -0
+$env:PYLAUNCH_DEBUG = 1; py -3.13 -c "import sys"
+```
+
+**Fix** (one of):
+
+- Re-run the python.org installer with both "Add python.exe to PATH" and "Install py launcher" **checked**.
+- Or just run the install script with `python` directly instead of relying on `py`:
+  ```powershell
+  git clone https://github.com/JSap0914/linkedin-automation.git $HOME\.linkedin-automation
+  cd $HOME\.linkedin-automation
+  python -m venv .venv
+  .venv\Scripts\python.exe -m pip install -e ".[dev]"
+  .venv\Scripts\scrapling.exe install
+  .venv\Scripts\linkedin-autoreply.exe init
+  ```
+
+On macOS/Linux, check what you have:
 
 ```bash
-# Check what you have (macOS/Linux)
 command -v python3.11 python3.12 python3.13 python3
-
-# PowerShell
-py --list
 ```
 
 Install a recent CPython from [python.org](https://www.python.org/downloads/) if none show up.
