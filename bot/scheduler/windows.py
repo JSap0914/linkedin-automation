@@ -33,10 +33,8 @@ class WindowsScheduler(Scheduler):
 
     def install(self, *, project_root: Path, python_path: Path) -> None:
         bot_py = project_root / "bot.py"
-        cmd = (
-            f'cmd.exe /d /c "cd /d \"{project_root}\" && '
-            f'\"{python_path}\" \"{bot_py}\""'
-        )
+        windowless_python = self._windowless(python_path)
+        cmd = f'"{windowless_python}" "{bot_py}"'
         (project_root / "logs").mkdir(parents=True, exist_ok=True)
         _run(
             [
@@ -50,6 +48,13 @@ class WindowsScheduler(Scheduler):
                 "/F",
             ],
         )
+
+    def _windowless(self, python_path: Path) -> Path:
+        if python_path.name.lower() == "python.exe":
+            candidate = python_path.with_name("pythonw.exe")
+            if candidate.exists():
+                return candidate
+        return python_path
 
     def uninstall(self) -> None:
         installed, _ = _query_raw()
@@ -99,5 +104,5 @@ class WindowsScheduler(Scheduler):
         return None
 
     def template_hash(self) -> str:
-        key = f"{Scheduler.LABEL}|{Scheduler.INTERVAL_SECONDS}|schtasks|MINUTE|1|LIMITED|cmd.exe|cd /d"
+        key = f"{Scheduler.LABEL}|{Scheduler.INTERVAL_SECONDS}|schtasks|MINUTE|1|LIMITED|pythonw.exe|direct"
         return hashlib.sha256(key.encode()).hexdigest()

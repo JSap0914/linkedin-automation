@@ -61,11 +61,38 @@ def test_install_uses_per_minute_schedule(fake_run, tmp_path):
     assert create[mo_idx + 1] == "1"
 
 
-def test_install_embeds_python_and_bot_py_in_action(fake_run, tmp_path):
+def test_install_embeds_pythonw_and_bot_py_in_action(fake_run, tmp_path):
     calls, _ = fake_run
     project_root = tmp_path / "proj"
     project_root.mkdir()
-    python_path = project_root / ".venv" / "Scripts" / "python.exe"
+    venv_scripts = project_root / ".venv" / "Scripts"
+    venv_scripts.mkdir(parents=True)
+    python_path = venv_scripts / "python.exe"
+    python_path.write_bytes(b"")
+    pythonw_path = venv_scripts / "pythonw.exe"
+    pythonw_path.write_bytes(b"")
+
+    sched = WindowsScheduler()
+    sched.install(project_root=project_root, python_path=python_path)
+
+    create = [c for c in calls if c[:2] == ["schtasks.exe", "/Create"]][0]
+    tr_idx = create.index("/TR")
+    action = create[tr_idx + 1]
+    assert str(pythonw_path) in action, "should swap python.exe -> pythonw.exe when sibling exists"
+    assert "bot.py" in action
+    assert "cmd.exe" not in action, "no cmd.exe wrapper (prevents console flash)"
+    assert "cd /d" not in action
+
+
+def test_install_falls_back_to_given_python_when_pythonw_missing(fake_run, tmp_path):
+    calls, _ = fake_run
+    project_root = tmp_path / "proj"
+    project_root.mkdir()
+    venv_scripts = project_root / ".venv" / "Scripts"
+    venv_scripts.mkdir(parents=True)
+    python_path = venv_scripts / "python.exe"
+    python_path.write_bytes(b"")
+
     sched = WindowsScheduler()
     sched.install(project_root=project_root, python_path=python_path)
 
@@ -73,9 +100,21 @@ def test_install_embeds_python_and_bot_py_in_action(fake_run, tmp_path):
     tr_idx = create.index("/TR")
     action = create[tr_idx + 1]
     assert str(python_path) in action
-    assert "bot.py" in action
-    assert "cmd.exe /d /c" in action
-    assert "cd /d" in action
+
+
+def test_install_keeps_non_python_exe_path_untouched(fake_run, tmp_path):
+    calls, _ = fake_run
+    project_root = tmp_path / "proj"
+    project_root.mkdir()
+    custom = project_root / "custom-python"
+
+    sched = WindowsScheduler()
+    sched.install(project_root=project_root, python_path=custom)
+
+    create = [c for c in calls if c[:2] == ["schtasks.exe", "/Create"]][0]
+    tr_idx = create.index("/TR")
+    action = create[tr_idx + 1]
+    assert str(custom) in action
 
 
 def test_install_forces_overwrite(fake_run, tmp_path):
