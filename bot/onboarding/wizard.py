@@ -8,8 +8,8 @@ from bot.onboarding.steps import (
     BaseStep,
     BootstrapStep,
     DmConfigStep,
+    DmEnableStep,
     FinalStep,
-    GitHubStarStep,
     LoginStep,
     PrereqStep,
     ReplyConfigStep,
@@ -26,12 +26,10 @@ class OnboardingWizard:
         TosStep,
         PrereqStep,
         LoginStep,
-        ReplyConfigStep,
-        DmConfigStep,
+        DmEnableStep,
         WriteConfigStep,
         BootstrapStep,
         SchedulerInstallStep,
-        GitHubStarStep,
         FinalStep,
     ]
 

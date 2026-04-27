@@ -68,7 +68,9 @@ class PrereqStep(BaseStep):
         try:
             import scrapling
         except ImportError:
-            console.print("[red]scrapling not installed. Run `pip install -e .[dev]` first.[/red]")
+            console.print(
+                "[red]scrapling not installed. Run `pip install -e .[dev]` first.[/red]"
+            )
             return False
         console.print("[green]OK[/green] Python version + scrapling OK")
         state["prereq_ok"] = True
@@ -130,13 +132,19 @@ class ReplyConfigStep(BaseStep):
         if not _confirm("Use the default 3 Korean thank-you replies?", default=True):
             lines: list[str] = []
             for i in range(3):
-                line = _text(f"Reply template #{i + 1}:", default=defaults["sentences"][i])
+                line = _text(
+                    f"Reply template #{i + 1}:", default=defaults["sentences"][i]
+                )
                 if line is None:
                     return False
                 lines.append(line.strip() or defaults["sentences"][i])
             defaults["sentences"] = lines
 
-        raw = _text("Reply delay (seconds, 0 = instant):", default="0", validate=_is_positive_int)
+        raw = _text(
+            "Reply delay (seconds, 0 = instant):",
+            default="0",
+            validate=_is_positive_int,
+        )
         if raw is None:
             return False
         delay = int(raw)
@@ -155,12 +163,22 @@ class ReplyConfigStep(BaseStep):
         raw = _text(
             "How many days of your recent posts should the bot scan? (1-3650):",
             default=str(defaults["post_lookback_days"]),
-            validate=lambda v: (v.isdigit() and 1 <= int(v) <= 3650) or "Must be between 1 and 3650",
+            validate=lambda v: (v.isdigit() and 1 <= int(v) <= 3650)
+            or "Must be between 1 and 3650",
         )
         if raw is None:
             return False
         defaults["post_lookback_days"] = int(raw)
 
+        return True
+
+
+class DmEnableStep(BaseStep):
+    name = "Auto-DM"
+
+    def run(self, state: dict) -> bool:
+        defaults = state.setdefault("config", default_config_dict())
+        defaults["dm"]["enabled"] = bool(_confirm("Enable auto-DM?", default=True))
         return True
 
 
@@ -196,7 +214,9 @@ class DmConfigStep(BaseStep):
             return False
         dm["max_per_day"] = int(raw)
 
-        raw = _text("DM delay (seconds, 0 = instant):", default="0", validate=_is_positive_int)
+        raw = _text(
+            "DM delay (seconds, 0 = instant):", default="0", validate=_is_positive_int
+        )
         if raw is None:
             return False
         delay = int(raw)
@@ -215,8 +235,8 @@ class WriteConfigStep(BaseStep):
 
         config_dict = state.get("config")
         if not isinstance(config_dict, dict):
-            console.print("[red]No config in state. Aborting.[/red]")
-            return False
+            config_dict = default_config_dict()
+            state["config"] = config_dict
 
         try:
             RepliesConfig(**config_dict)
@@ -238,13 +258,7 @@ class BootstrapStep(BaseStep):
     name = "Bootstrap existing comments"
 
     def run(self, state: dict) -> bool:
-        if not _confirm(
-            "Bootstrap existing comments? (Recommended — marks current comments as seen)",
-            default=True,
-        ):
-            console.print("Skipped bootstrap.")
-            return True
-        console.print("[cyan]Bootstrapping...[/cyan]")
+        console.print("[cyan]Marking existing comments as seen...[/cyan]")
         from bot.orchestrator import run as orchestrator_run
 
         try:
@@ -260,10 +274,7 @@ class SchedulerInstallStep(BaseStep):
     name = "Install scheduler"
 
     def run(self, state: dict) -> bool:
-        if not _confirm("Install scheduler (launchd / Task Scheduler)?", default=True):
-            console.print("Skipped scheduler install. Run `linkedin-autoreply start` later.")
-            return True
-
+        console.print("[cyan]Installing scheduler...[/cyan]")
         sched = get_scheduler()
         try:
             sched.install(project_root=Path.cwd(), python_path=Path(sys.executable))
@@ -283,6 +294,7 @@ class GitHubStarStep(BaseStep):
 
     def _is_interactive(self) -> bool:
         import os
+
         return sys.stdin.isatty() and not os.environ.get("CI")
 
     def _gh_available(self) -> bool:
@@ -353,10 +365,20 @@ class FinalStep(BaseStep):
 
     def run(self, state: dict) -> bool:
         console.print("\n[bold green]Setup complete![/bold green]\n")
-        console.print("Next commands:")
-        console.print("  [cyan]linkedin-autoreply status[/cyan]        — check scheduler")
+        console.print("Customize settings anytime:")
+        console.print(
+            "  [cyan]linkedin-autoreply config wizard[/cyan] — change reply/DM settings"
+        )
+        console.print(
+            "  [cyan]linkedin-autoreply config show[/cyan]   — view current config"
+        )
+        console.print()
+        console.print("Other commands:")
+        console.print(
+            "  [cyan]linkedin-autoreply run --dry-run[/cyan] — test a single cycle"
+        )
+        console.print(
+            "  [cyan]linkedin-autoreply status[/cyan]        — check scheduler"
+        )
         console.print("  [cyan]linkedin-autoreply logs[/cyan]          — tail logs")
-        console.print("  [cyan]linkedin-autoreply config show[/cyan]   — view config")
-        console.print("  [cyan]linkedin-autoreply run --dry-run[/cyan] — test a single cycle")
-        console.print("  [cyan]linkedin-autoreply update[/cyan]        — pull latest code")
         return True
