@@ -95,29 +95,32 @@ py -3 -m venv .venv
 
 ## What the `init` Wizard Does
 
-Each step is skippable (answer "no") except ToS + login. Defaults in brackets.
+Everything is pre-configured with sensible defaults. You only answer **2 questions** — the rest is automatic.
 
-1. **ToS acknowledgement** — accept the automation risk (no default, must type `y`)
-2. **Prerequisite check** — Python version + `scrapling` importable
+1. **ToS acknowledgement** — accept the automation risk (must type `y`)
+2. **Prerequisite check** — *(automatic)* Python version + `scrapling` importable
 3. **LinkedIn login** — opens a Chromium window; log in manually (you have 5 minutes); session cookies are cached in `.profile/`
-4. **Reply config**
-   - Enable auto-reply? `[Y/n]`
-   - Use the default 3 Korean thank-you templates? `[Y/n]` — answer `n` to enter your own 3
-   - Reply delay seconds (0 = instant) `[0]`
-   - Polling interval seconds (must be ≥ 60) `[60]`
-   - How many days of your recent posts should the bot scan? (1-3650) `[30]`
-5. **DM config** (optional — skip if you only want replies)
-   - Enable auto-DM? `[y/N]`
-   - Only DM 1st-degree connections? `[Y/n]` (recommended yes)
-   - Auto-accept pending invitations from commenters? `[Y/n]`
-   - Use default 3 Korean DM templates? `[Y/n]`
-   - Max DMs per day `[30]`
-   - DM delay seconds `[0]`
-6. **Write config** → `replies.yaml` (validated against pydantic schema before write)
-7. **Bootstrap existing comments?** `[Y/n]` — marks all current comments on your posts as "seen" so the bot won't reply to old ones
-8. **Install scheduler?** `[Y/n]` — registers a launchd agent (macOS) or Task Scheduler task (Windows) that runs the bot every 60 seconds
-9. **Star on GitHub?** `[Y/n]` — if `gh` CLI is installed and authenticated, stars the repo in-place via `gh api --silent --method PUT /user/starred/<repo>`. Otherwise opens the repo in your browser so you can star manually. Skipped automatically in non-TTY/CI. Pattern inspired by [oh-my-openagent](https://github.com/code-yeongyu/oh-my-openagent).
-10. **Done** — prints next-step commands
+4. **Enable auto-DM?** `[Y/n]` — sends a follow-up DM to commenters (1st-degree only, max 30/day)
+5. **Write config** — *(automatic)* saves `replies.yaml` with defaults
+6. **Bootstrap** — *(automatic)* marks all existing comments as "seen" so the bot won't reply to old ones
+7. **Install scheduler** — *(automatic)* registers a launchd agent (macOS) or Task Scheduler task (Windows) that runs the bot every 60 seconds. On Linux, prints a notice to set up cron/systemd manually.
+8. **Done** — prints commands for customizing settings
+
+### Defaults written to `replies.yaml`
+
+| Setting | Default | Change later with |
+|---|---|---|
+| Auto-reply enabled | `true` | `config set enabled false` |
+| Reply templates | 3 Korean thank-you messages | `config wizard` or `config edit` |
+| Reply delay | 0 s (instant) | `config set reply_delay_seconds_min 30` |
+| Polling interval | 60 s | `config set polling_min_interval_seconds 300` |
+| Post lookback | 30 days | `config set post_lookback_days 7` |
+| DM: 1st-degree only | `true` | `config set dm.only_first_degree_connections false` |
+| DM: auto-accept invites | `true` | `config set dm.auto_accept_pending_invitations false` |
+| DM: max per day | 30 | `config set dm.max_per_day 50` |
+| DM: delay | 0 s | `config set dm.delay_seconds_min 60` |
+
+To re-configure interactively, run `linkedin-autoreply config wizard` anytime.
 
 ### What gets created on disk
 
